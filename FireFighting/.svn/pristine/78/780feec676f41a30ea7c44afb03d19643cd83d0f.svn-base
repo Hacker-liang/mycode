@@ -1,0 +1,154 @@
+//
+//  OperateDatabase.m
+//  FireFighting
+//
+//  Created by liangpengshuai on 14-4-24.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "OperateDatabase.h"
+
+@implementation OperateDatabase
+
+static sqlite3 *database;
+static NSString *mainDatabaseName = @"user.sqlite";
+static sqlite3_stmt *statement;
++ (NSString *)getUserDatabasePath: (NSString *)userNo
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *userDatabaseName = [userNo stringByAppendingFormat:@".sqlite"];
+    NSString *userDocumentPath =  [documentsDirectory stringByAppendingPathComponent:userDatabaseName];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if(![fileManager fileExistsAtPath:userDocumentPath])
+        [fileManager createDirectoryAtPath:userDocumentPath withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    return userDocumentPath;
+}
+
++ (NSString *)getMainDatabasePath
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *retDiectory = [documentsDirectory stringByAppendingPathComponent:mainDatabaseName];
+    return retDiectory;
+}
+
++ (BOOL)OpenDatabase: (NSString *)databasePath
+{
+    if (sqlite3_open([databasePath UTF8String], &database) != SQLITE_OK) {
+        sqlite3_close(database);
+        NSAssert(0, @"Fail to open database");
+        return NO;
+    }
+    return YES;
+}
+
++ (void)execSql:(NSString *)sql
+{
+    char *err;
+    if (sqlite3_exec(database, [sql UTF8String], NULL, NULL, &err) != SQLITE_OK) {
+        sqlite3_close(database);
+        NSLog(@"数据库操作数据失败!");
+    }
+}
+
++ (BOOL)getUserInfo
+{
+    UserInfomation *userInfo = [UserInfomation shareUserInfo];
+   
+    NSString *createUserInfoTable = [NSString stringWithFormat:@"create table if not exists userinfo(userno text primary key, username text, userphoto text, accounttype integer, department text, emailaddress text, phone text)"];
+    NSString *mainDatabasePath = [OperateDatabase getMainDatabasePath];
+    NSString *selectInfo = [NSString stringWithFormat:@"select * from userinfo where userno = '%@'",userInfo.userNo];
+   //为了测试使用固定用户名
+    //NSString *selectInfo = [NSString stringWithFormat:@"select * from userinfo where userno = 'heheceo'"];
+    BOOL openResult = [OperateDatabase OpenDatabase:mainDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createUserInfoTable];
+        if (sqlite3_prepare_v2(database, [selectInfo UTF8String], -1, &statement, nil) == SQLITE_OK) {
+            while (sqlite3_step(statement) == SQLITE_ROW) {
+                char *userno = (char *)sqlite3_column_text(statement, 0);
+                userInfo.userNo = [[NSString alloc] initWithUTF8String:userno];
+                char *username = (char *)sqlite3_column_text(statement, 1);
+                if (username != NULL)
+                    userInfo.userName = [[NSString alloc] initWithUTF8String:username];
+                else
+                    userInfo.userName = @"";
+                char *userphoto = (char *)sqlite3_column_text(statement, 2);
+                userInfo.userPhoto = [Base64 base64Decode:[[NSString alloc] initWithUTF8String:userphoto]];
+                userInfo.accountType = sqlite3_column_int(statement, 3);
+                char *department = (char *)sqlite3_column_text(statement, 4);
+                if (department != NULL)
+                    userInfo.department = [[NSString alloc] initWithUTF8String:department];
+                else
+                    userInfo.department = @"";
+                char *useremail = (char *)sqlite3_column_text(statement, 5);
+                if (useremail != NULL)
+                     userInfo.emailAddress = [[NSString alloc] initWithUTF8String:useremail];
+                else userInfo.emailAddress = @"";
+                char *phone = (char *)sqlite3_column_text(statement, 6);
+                if (phone != NULL)
+                    userInfo.phoneNo = [[NSString alloc] initWithUTF8String:phone];
+                else
+                    userInfo.phoneNo = @"";
+            }
+            sqlite3_close(database);
+            if (userInfo.userNo==NULL) {
+                return NO;
+            }
+            return YES;
+        }
+        return NO;
+    }
+    return NO;
+}
+
++ (void)InsertUserInfoToDatabase
+{
+    UserInfomation *userInfo = [UserInfomation shareUserInfo];
+    sqlite3_stmt *stmt;
+    NSString *createUserInfoTable = [NSString stringWithFormat:@"create table if not exists userinfo(userno text primary key, username text, userphoto text, accounttype integer, department text, emailaddress text, phone text)"];
+    NSString *mainDatabasePath = [OperateDatabase getMainDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:mainDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createUserInfoTable];
+        NSString *insertInfo = [NSString stringWithFormat:@"insert or replace into userinfo(userno,username,userphoto,accounttype,department,emailaddress,phone)" "values (?,?,?,?,?,?,?);"];
+        if (sqlite3_prepare_v2(database, [insertInfo UTF8String], -1, &stmt, nil) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, [userInfo.userNo UTF8String], -1, NULL);
+            sqlite3_bind_text(stmt, 2, [userInfo.userName UTF8String], -1, NULL);
+            NSString *photoStr = [Base64 base64Encode:userInfo.userPhoto];
+            sqlite3_bind_text(stmt, 3,[photoStr UTF8String] , -1, NULL);
+            sqlite3_bind_int(stmt, 4, userInfo.accountType);
+            sqlite3_bind_text(stmt, 5, [userInfo.department UTF8String], -1, NULL);
+            sqlite3_bind_text(stmt, 6, [userInfo.emailAddress UTF8String], -1, NULL);
+            sqlite3_bind_text(stmt, 7, [userInfo.phoneNo UTF8String], -1, NULL);
+        }
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            
+        }
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(database);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@end

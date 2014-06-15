@@ -1,0 +1,25 @@
+//
+//  ChatViewController.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "UIBubbleTableViewDataSource.h"
+#import "UIBubbleTableView.h"
+#import "NSBubbleData.h"
+
+@interface ChatViewController : UIViewController<UIBubbleTableViewDataSource>
+
+@property (strong, nonatomic) IBOutlet UITextField *chatWithTextField;
+@property (strong, nonatomic) IBOutlet UITextView *messageToSend;
+@property (strong, nonatomic) IBOutlet UIView *textView;
+@property (strong, nonatomic) IBOutlet UIBubbleTableView *bubbleTable;
+
+@property (copy, nonatomic) NSString *chatWith;
+
+- (IBAction)ReturnToSuperViewController:(UIButton *)sender;
+- (IBAction)SendMessage:(UIButton *)sender;
+@end

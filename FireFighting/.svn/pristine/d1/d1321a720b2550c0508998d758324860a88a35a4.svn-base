@@ -1,0 +1,42 @@
+//
+//  OperateDatabase.h
+//  FireFighting
+//
+//  Created by liangpengshuai on 14-4-24.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "UserInfomation.h"
+#import <sqlite3.h>
+#import "Base64.h"
+#import "FileContent.h"
+
+@interface OperateDatabase : NSObject
+
++(BOOL)getUserInfo;
++ (void)InsertUserInfoToDatabase;
++ (void)InsertOtherUserInfoToDatabase:(NSMutableArray *)allUserInfo;
++ (void)InsertPostFileContentToDatabase: (NSArray *)files;
++ (void)InsertReceiveFileContentToDatabase: (NSArray *)files;
++ (NSDictionary *)getPostFileContent;
++ (FileContent *)getPostFileContent: (long)posttime;
++ (NSDictionary *)getReceiveFileContent;
++ (FileContent *)getReceiveFileContent: (long)posttime;
++ (void)InsertAttachFileToDatabase: (NSArray *)attachfiles;
++ (void)UpdateAttachFileToDatabase: (NSString *)attachfilename;
++ (NSMutableArray *)getOtherUserInfo;
++ (NSDictionary *)getAttachFileLabel;
+//了解记录插入数据库
++ (void)InsertChatlogToDatabase: (NSDictionary *)chatDic;
+//获取聊天信息
++ (NSMutableArray *)getChatlog:(NSString *)userno;
+//将消息更新为已读
++ (void)updateChatlogStatus: (NSString *)fromID;
+//获得是否有未读消息
++ (BOOL)getChatIsUnRead: (NSString *)userno;
+//插入活动信息
++ (void)InsertActivityList: (NSArray *)userList;
++ (NSArray *)getActivityList;
++ (void)DeleteActivityList:(double) activityDate;
+@end

@@ -1,0 +1,158 @@
+//
+//  ChatViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "ChatViewController.h"
+
+@interface ChatViewController ()
+{
+    float currentKeyboardHeigh;
+    BOOL keyboardIsShow;
+}
+//@property (strong, nonatomic)MessageContentTableViewCell *messageContentCell;
+@property (strong, nonatomic)NSMutableArray *cellArray;
+
+@property (nonatomic)CGSize keyboardSize;
+
+
+@end
+
+@implementation ChatViewController
+
+static NSString *messageCellIdentifier = @"messageCell";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        
+        [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(KeyboardWillHide :) name:UIKeyboardWillHideNotification object:nil];
+        [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(KeyboardWillShow :) name:UIKeyboardWillShowNotification object:nil];
+
+        
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    keyboardIsShow = NO;
+    [super viewDidLoad];
+    [self.view setFrame:[[UIScreen mainScreen] bounds]];
+    _chatWithTextField.text = _chatWith;
+    _bubbleTable.bubbleDataSource = self;
+    _bubbleTable.showAvatars = YES;
+  //  _bubbleTable.snapInterval = 120;
+
+    if (!_cellArray) {
+        _cellArray = [[NSMutableArray alloc]init];
+    }
+    _messageToSend.layer.cornerRadius = 4.0f;
+
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+
+
+
+- (void)TouchDownViewToHideKeyboard
+{
+    [_messageToSend resignFirstResponder];
+}
+
+- (IBAction)ReturnToSuperViewController:(UIButton *)sender {
+    [self.view removeFromSuperview];
+}
+
+#pragma -UIBubbleTableViewDataSource
+
+- (NSInteger)rowsForBubbleTable:(UIBubbleTableView *)tableView
+{
+    return [_cellArray count];
+}
+
+- (NSBubbleData *)bubbleTableView:(UIBubbleTableView *)tableView dataForRow:(NSInteger)row
+{
+    return [_cellArray objectAtIndex:row];
+}
+
+#pragma mark - Keyboard events
+
+- (void)KeyboardWillShow :(NSNotification*)aNotification
+{
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(TouchDownViewToHideKeyboard)];
+    tap.numberOfTapsRequired = 1;
+    [self.bubbleTable addGestureRecognizer:tap];
+    NSLog(@"%@",self.bubbleTable);
+    
+    CGRect windowSize = [[UIScreen mainScreen] bounds];
+    float kbEndHeigh = [[[aNotification userInfo] objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue].size.height;
+    float kbBeginHeigh = [[[aNotification userInfo] objectForKey:UIKeyboardFrameBeginUserInfoKey]CGRectValue].size.height;
+    float kbBeginY = [[[aNotification userInfo] objectForKey:UIKeyboardFrameBeginUserInfoKey]CGRectValue].origin.y;
+    
+    if (kbBeginY == windowSize.size.height) {
+        [UIView animateWithDuration:0.2f animations:^{
+            CGRect frame = _textView.frame;
+            frame.origin.y -= kbEndHeigh;
+            _textView.frame = frame;
+        }];
+    } else if(kbBeginHeigh < kbEndHeigh) {
+        [UIView animateWithDuration:0.2f animations:^{
+            CGRect frame = _textView.frame;
+            frame.origin.y -= (kbEndHeigh - kbBeginHeigh);
+            _textView.frame = frame;
+        }];
+    } else if(kbBeginHeigh > kbEndHeigh) {
+        [UIView animateWithDuration:0.2f animations:^{
+            CGRect frame = _textView.frame;
+            frame.origin.y += (kbBeginHeigh - kbEndHeigh);
+            _textView.frame = frame;
+        }];
+    }
+
+}
+
+- (void)KeyboardWillHide:(NSNotification*)aNotification
+{
+    NSDictionary* info = [aNotification userInfo];
+    //通过传递通知类型，得到键盘的大小。
+    CGSize kbSize = [[info objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
+        [UIView animateWithDuration:0.2f animations:^{
+            CGRect frame = _textView.frame;
+            frame.origin.y += kbSize.height;
+            _textView.frame = frame;
+        }];
+}
+
+- (IBAction)SendMessage:(UIButton *)sender {
+    if (![_messageToSend.text isEqual: @""]) {
+        NSBubbleData *bubbleData = [NSBubbleData dataWithText:_messageToSend.text date:[NSDate dateWithTimeIntervalSinceNow:0] type:BubbleTypeMine];
+        bubbleData.avatar = [UIImage imageNamed:@"userimage" ];
+        [_cellArray addObject:bubbleData];
+        [_bubbleTable reloadData];
+        [_messageToSend setText:@""];
+        [_messageToSend resignFirstResponder];
+    }
+}
+
+
+@end
+
+
+
+
+
+
+
+
+
+

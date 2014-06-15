@@ -1,0 +1,74 @@
+//
+//  LoginHttpRequest.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-4-19.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "LoginHttpRequest.h"
+
+@implementation LoginHttpRequest 
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        
+    }
+    return self;
+}
+
+- (void) HttpLogintwithPost:(NSData *)username_password
+{
+    NSString* urlStr = [NSString stringWithFormat:@"http://192.168.0.105:8080/FireFightingServer/LogInServlet"];
+    NSURL *url = [NSURL URLWithString:urlStr];
+    NSMutableURLRequest *requestlogin = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+    [requestlogin setHTTPMethod:@"POST"];
+    [requestlogin setHTTPBody:username_password];
+    NSURLConnection *connect = [[NSURLConnection alloc] initWithRequest:requestlogin delegate:self startImmediately:YES];
+    if (connect) {
+        _receiveData = [[NSMutableData alloc] init];
+    }
+    [connect start];
+}
+
+#pragma mark - NSURLConnectDelegate
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
+{
+    
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+{
+     NSLog(@"登录收到回应");
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+{
+    [_receiveData appendData:data];
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
+    [_myDelegate DoWithLoginHttpResulat:_receiveData];
+
+}
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

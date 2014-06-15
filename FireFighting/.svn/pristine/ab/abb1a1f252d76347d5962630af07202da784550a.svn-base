@@ -1,0 +1,17 @@
+//
+//  ReceivedFileDetailViewController.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-15.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface ReceivedFileDetailViewController : UIViewController
+
+@property (copy, nonatomic)NSString *fileDetail;
+@property (copy, nonatomic)NSString *ViewLabel;
+
+
+@end

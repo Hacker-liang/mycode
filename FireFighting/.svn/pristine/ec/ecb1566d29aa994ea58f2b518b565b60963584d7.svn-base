@@ -1,0 +1,20 @@
+//
+//  PersionalOfficeViewController.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "SuperViewController.h"
+#import "UserListTableViewController.h"
+#import "PersionalActivityListTableViewController.h"
+
+@interface PersionalOfficeViewController : SuperViewController<PresentChatWindow>
+
+@property (strong, nonatomic)UserListTableViewController *userListController;
+@property (strong, nonatomic)PersionalActivityListViewController *activityListController;
+
+- (IBAction)ListSegment:(UISegmentedControl *)sender;
+
+@end

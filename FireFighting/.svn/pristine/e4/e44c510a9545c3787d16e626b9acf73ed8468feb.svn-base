@@ -1,0 +1,87 @@
+//
+//  PersionalActivityListViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "PersionalActivityListTableViewController.h"
+
+@interface PersionalActivityListViewController ()
+
+@property (strong, nonatomic) NSMutableArray *activityList;
+
+@end
+
+@implementation PersionalActivityListViewController
+
+static NSString *activityCellIndentifier = @"activitycell";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+    self.activityList =  [@[@"登录", @"修改密码", @"发表文章", @"下载文章"]mutableCopy];
+    }
+    return self;
+}
+
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    UINib *nib = [UINib nibWithNibName:@"PersionalActivityListTableViewCell" bundle:nil];
+    UITableView *PATableView = (id)[self.view viewWithTag:1];
+    [PATableView registerNib:nib forCellReuseIdentifier:activityCellIndentifier];
+    // Do any additional setup after loading the view from its nib.
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+#pragma -tabview datasource
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return [self.activityList count];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    PersionActivityListTableViewCell *activityCell = [tableView dequeueReusableCellWithIdentifier:activityCellIndentifier forIndexPath:indexPath];
+    activityCell.activityContent.text = self.activityList[indexPath.row];
+    activityCell.activityDate.text = @"2014-12-23-12:00:00";
+    return activityCell;
+}
+
+#pragma -tableview delegate
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"%@",self.activityList);
+    [self.activityList removeObjectAtIndex:indexPath.row];
+
+    [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObjects:indexPath, nil] withRowAnimation:UITableViewRowAnimationAutomatic];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@end

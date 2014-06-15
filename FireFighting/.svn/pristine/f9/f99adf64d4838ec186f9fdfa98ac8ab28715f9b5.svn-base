@@ -1,0 +1,19 @@
+//
+//  OperateDatabase.h
+//  FireFighting
+//
+//  Created by liangpengshuai on 14-4-24.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "UserInfomation.h"
+#import <sqlite3.h>
+#import "Base64.h"
+
+@interface OperateDatabase : NSObject
+
++(BOOL)getUserInfo;
++ (void)InsertUserInfoToDatabase;
+
+@end

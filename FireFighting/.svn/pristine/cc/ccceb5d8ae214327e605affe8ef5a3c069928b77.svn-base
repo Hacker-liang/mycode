@@ -1,0 +1,84 @@
+//
+//  UserListTableViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "UserListTableViewController.h"
+
+@interface UserListTableViewController ()
+@property (strong, nonatomic)ChatViewController *chatViewController;
+@property (copy, nonatomic)NSMutableArray *userList;
+
+@end
+
+@implementation UserListTableViewController
+
+static NSString *userListCell = @"userlistcellidentifier";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    UINib *nib = [UINib nibWithNibName:@"UserListTableViewCell" bundle:nil];
+    UITableView *userListTableView = (id)[self.view viewWithTag:1];
+    _userList = [@[@"heheceo",@"heheceo1",@"heheceo2",@"heheceo3",@"heheceo4",@"heheceo5"]mutableCopy];
+    [userListTableView registerNib:nib forCellReuseIdentifier:userListCell];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+}
+
+#pragma -tableview datasource
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return [_userList count];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UserListTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:userListCell forIndexPath:indexPath];
+    cell.username.text = _userList[indexPath.row];
+    cell.userdepartment.text = @"计算机学院";
+    return cell;
+}
+
+#pragma -tableview delegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    _chatViewController = [[ChatViewController alloc]initWithNibName:@"ChatViewController" bundle:nil];
+    _chatViewController.chatWith = self.userList[indexPath.row];
+    [[NSNotificationCenter defaultCenter]postNotificationName:@"hidetabbar" object:nil];
+    [_myDelegate PresentChatWindow:_chatViewController];
+    NSLog(@"%@",_chatViewController);
+    //[self presentViewController:chatViewController animated:YES completion:nil];
+    //[self.view addSubview:chatViewController.view];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+@end

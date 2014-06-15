@@ -1,0 +1,180 @@
+//
+//  PostFileDetailViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "PostFileDetailViewController.h"
+
+@interface PostFileDetailViewController ()
+@property UserInfomation *userInfo;
+@property PostFileHttpRequest *postFileRequest;
+
+@end
+
+@implementation PostFileDetailViewController
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    self.navigationItem.title = @"新建文章";
+    _postFileRequest = [[PostFileHttpRequest alloc] init];
+    _postFileRequest.myDelegate = self;
+    // Do any additional setup after loading the view from its nib.
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    self.tabBarController.tabBar.hidden = YES;
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    self.tabBarController.tabBar.hidden = NO;
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (IBAction)TouchDownViewToHideKeyboard:(id)sender
+{
+    [self.fileDetail resignFirstResponder];
+    [self.fileLabel resignFirstResponder];
+}
+
+
+
+- (IBAction)ChoseDepartment:(UISegmentedControl *)sender
+{
+}
+
+- (IBAction)PostFile:(UIButton *)sender
+{
+    if ([self CheckInput]) {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"" message:@"确认发表此文章？" delegate:self cancelButtonTitle:@"YES" otherButtonTitles:@"NO", nil];
+        [alert show];
+    }
+}
+
+- (void)ConfirmPostFile
+{
+    
+    [_activityView startAnimating];
+    [_postFileRequest HttpFilePostwithPost:[self EncodeWithInput]];
+    
+}
+
+- (BOOL)CheckInput
+{
+    NSString *templabel = [_fileLabel.text stringByReplacingOccurrencesOfString:@" " withString:@""];
+    NSString *tempdetail = [_fileDetail.text stringByReplacingOccurrencesOfString:@" " withString:@""];
+    if ([templabel isEqualToString:@""] || [tempdetail isEqualToString:@""]) {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"" message:@"标题或内容不能为空" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil, nil];
+        [alert show];
+        return NO;
+    }else return YES;
+}
+
+- (NSData *)EncodeWithInput
+{
+    _userInfo = [UserInfomation shareUserInfo];
+    NSData *retData = [[NSData alloc] init];
+    NSMutableDictionary *requesDic = [[NSMutableDictionary alloc] init];
+    [requesDic setObject:@"postnewfile" forKey:@"postfilerequest"];
+    NSString *department;
+    if (_departmentSegment.selectedSegmentIndex == 0)
+        department = @"all";
+    else department = _userInfo.department;
+    [requesDic setObject:_userInfo.userNo forKey:@"userno"];
+    [requesDic setObject:department forKey:@"department"];
+    NSNumber *time = [[NSNumber alloc] initWithDouble:[self getLocalTime]];
+    
+    //如果是管理员则默认为已审批，普通用户则为审批中
+    if (_userInfo.accountType == 0)
+        [requesDic setObject:[[NSNumber alloc] initWithInt:2] forKey:@"filestatus"];
+    else
+        [requesDic setObject:[[NSNumber alloc] initWithInt:1] forKey:@"filestatus"];
+    
+    [requesDic setObject:time forKey:@"posttime"];
+    [requesDic setObject:_fileLabel.text forKey:@"filelabel"];
+    [requesDic setObject:_fileDetail.text forKey:@"filedetail"];
+    retData = [OperateWithJson enCodeWithDictionary:requesDic];    
+    return retData;
+}
+
+- (NSTimeInterval)getLocalTime
+{
+    NSDate *date = [NSDate date];
+    NSTimeZone *zone = [NSTimeZone systemTimeZone];
+    NSInteger interval = [zone secondsFromGMTForDate: date];
+    NSDate *localeDate = [date  dateByAddingTimeInterval: interval];
+    NSInteger intervalfrom1970 = [localeDate timeIntervalSince1970];
+    return intervalfrom1970;
+}
+
+#pragma mark - UIAlertViewDelegate
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if (buttonIndex == 0) {
+        [self ConfirmPostFile];
+    }
+}
+
+#pragma mark - PostFileHttpRequestResultDelegate
+
+- (void)DoWithHttpResulat:(NSData *)resulatData
+{
+    NSDictionary *retDic = [[NSDictionary alloc] init];
+    retDic = [OperateWithJson deCodewithJSON:resulatData];
+    id result = [retDic objectForKey:@"postfileresult"];
+    [_activityView stopAnimating];
+    if ([result boolValue]) {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"" message:@"文章发送成功" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil, nil];
+        _fileDetail.text = nil;
+        _fileLabel.text = nil;
+        [alert show];
+    }else {
+         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"" message:@"文章发送失败" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil, nil];
+        [alert show];
+    }
+}
+
+- (void)StopActivityView:(BOOL)isSucess
+{
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"" message:@"文章发送失败" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil, nil];
+    [alert show];
+    [_activityView stopAnimating];
+}
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+

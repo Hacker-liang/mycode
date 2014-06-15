@@ -1,0 +1,114 @@
+//
+//  FileReceiveTableViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-13.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "FileReceiveTableViewController.h"
+
+@interface FileReceiveTableViewController ()
+
+@property (strong, nonatomic)FileDetailViewController *FileDetailController;
+
+@property (strong, nonatomic)FileReceiveTableViewCell *FRCell;
+
+@property (strong, nonatomic)NSMutableArray *fileContentArray;
+
+@end
+
+@implementation FileReceiveTableViewController
+
+
+
+static NSString *fileReceiveCell = @"fileReceiveCellIdentifier";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        _fileContentArray = [@[@"请做好消防检查0",@"请做好消防检查1",@"请做好消防检查2",@"请做好消防检查3",@"请做好消防检查4",@"请做好消防检查5",@"请做好消防检查6",@"请做好消防检查7",@"请做好消防检查8"]mutableCopy];
+        _FileDetailController = [[FileDetailViewController alloc]initWithNibName:@"ReceivedFileDetailViewController" bundle:nil];
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    UITableView *FileReceiveTableView = (id)[self.view viewWithTag:1];
+    FileReceiveTableView.rowHeight = 60;
+    UINib *FRTableCellNib = [UINib nibWithNibName:@"FileReceiveTableViewCell" bundle:nil];
+    [FileReceiveTableView registerNib:FRTableCellNib forCellReuseIdentifier:fileReceiveCell];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+#pragma mark - Table view data source
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return [_fileContentArray count];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    FileReceiveTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:fileReceiveCell forIndexPath:indexPath];
+    cell.fileContentTextField.text = _fileContentArray[indexPath.row];
+    cell.accessoryType = UITableViewCellAccessoryDetailButton;
+    return cell;
+
+}
+
+
+#pragma table view delegate
+
+- (void)tableView:(UITableView *)tableView didDeselectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"%@",@"select");
+    
+}
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
+{
+    
+    _FRCell = (id)[tableView cellForRowAtIndexPath:indexPath];
+    //_FileDetailController.fileDetail = _FRCell.fileContentTextField.text;
+    _FileDetailController = [[FileDetailViewController alloc] init];
+    [self.navigationController pushViewController:_FileDetailController animated:YES];
+    
+    
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"%@",_fileContentArray);
+    [_fileContentArray removeObjectAtIndex:indexPath.row];
+    [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObjects:indexPath, nil] withRowAnimation:UITableViewRowAnimationAutomatic];
+}
+
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

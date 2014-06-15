@@ -1,0 +1,225 @@
+//
+//  FilePostViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-15.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "FilePostViewController.h"
+
+@interface FilePostViewController ()
+
+@property (strong, nonatomic) FilePostTableViewCell *FPCell;
+
+@property (strong, nonatomic) PostFileDetailViewController *createPostFileViewController;
+@property (strong, nonatomic) PostFileHttpRequest *postFileRequest;
+@property (strong, nonatomic) UserInfomation *userInfo;
+
+@property (copy, nonatomic) NSMutableArray *notPostFileContentArray;
+@property (copy, nonatomic) NSMutableArray *overPostFileContentArray;
+@property (copy, nonatomic) NSMutableArray *approvalFileContentArray;
+@property (copy, nonatomic) NSMutableArray *currentFileContentArray;
+@property (strong, nonatomic) NSString *fileContent;
+
+
+@end
+
+@implementation FilePostViewController
+
+static NSString *FilePostCellIndentifier = @"FilePostCellIdentifier";
+
+
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+       
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    [self FillCellContent:[OperateDatabase getPostFileContent]];
+    UINib *nibOne = [UINib nibWithNibName:@"FilePostTableViewCell" bundle:nil];
+    _FilePostTableView.rowHeight = 60;
+    [_FilePostTableView registerNib:nibOne forCellReuseIdentifier:FilePostCellIndentifier];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    _segmentButton.selectedSegmentIndex = 0;
+    _currentFileContentArray = _overPostFileContentArray;
+    [self.FilePostTableView reloadData];
+    _fileContent = @"已审批";
+    [super viewWillAppear:animated];
+    self.tabBarController.tabBar.hidden = YES;
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    self.tabBarController.tabBar.hidden = NO;
+}
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self loadPullToRefresh];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    
+}
+
+- (void)loadPullToRefresh
+{
+    if ([self respondsToSelector:@selector(automaticallyAdjustsScrollViewInsets)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+        
+        UIEdgeInsets insets = self.FilePostTableView.contentInset;
+        insets.top = self.navigationController.navigationBar.bounds.size.height +
+        [UIApplication sharedApplication].statusBarFrame.size.height;
+        self.FilePostTableView.contentInset = insets;
+        self.FilePostTableView.scrollIndicatorInsets = insets;
+    }
+    __block FilePostViewController *tempSelf = self;
+    [self.FilePostTableView addCustomPullToRefreshWithActionHandler:^{
+        [tempSelf loadnewFile];
+    }];
+}
+
+- (void)loadnewFile
+{
+    _FilePostTableView.showsPullToRefresh = YES;
+    _postFileRequest = [[PostFileHttpRequest alloc] init];
+     _postFileRequest.myDelegate = self;
+    [_postFileRequest HttpFilePostwithPost:[self encodeWithFileRefreshRequest]];
+}
+
+- (NSData *)encodeWithFileRefreshRequest
+{
+    _userInfo = [UserInfomation shareUserInfo];
+    _userInfo = [UserInfomation shareUserInfo];
+    NSData *retData = [[NSData alloc] init];
+    NSMutableDictionary *requesDic = [[NSMutableDictionary alloc] init];
+    [requesDic setObject:@"refreshfilestatus" forKey:@"postfilerequest"];
+    [requesDic setObject:_userInfo.userNo forKey:@"userno"];
+    retData = [OperateWithJson enCodeWithDictionary:requesDic];
+    return retData;
+}
+
+- (void)FillCellContent:(NSDictionary *)fillcontent
+{
+    _overPostFileContentArray = [fillcontent objectForKey:@"fileover"];
+    _notPostFileContentArray = [fillcontent objectForKey:@"filenotpass"];
+    _approvalFileContentArray = [fillcontent objectForKey:@"fileprogress"];
+    if (_segmentButton.selectedSegmentIndex == 0)
+        _currentFileContentArray = _overPostFileContentArray;
+    if (_segmentButton.selectedSegmentIndex == 1)
+        _currentFileContentArray = _notPostFileContentArray;
+    if (_segmentButton.selectedSegmentIndex == 2)
+        _currentFileContentArray = _approvalFileContentArray;
+    [self.FilePostTableView reloadData];
+}
+
+- (IBAction)FileSegment:(UISegmentedControl *)sender
+{
+    switch (sender.selectedSegmentIndex) {
+        case 0:
+            _currentFileContentArray = _overPostFileContentArray;
+            _fileContent = @"已审批";
+            [_FilePostTableView reloadData];
+            
+            break;
+        case 1:
+            _currentFileContentArray = _notPostFileContentArray;
+            _fileContent = @"未审批";
+            [_FilePostTableView reloadData];
+            break;
+        case 2:
+            _currentFileContentArray = _approvalFileContentArray;
+            _fileContent = @"审批中";
+            [_FilePostTableView reloadData];
+            break;
+        case 3:
+            _createPostFileViewController = [[PostFileDetailViewController alloc]initWithNibName:@"PostFileDetailViewController" bundle:nil];
+            [self.navigationController pushViewController:_createPostFileViewController animated:YES];
+            break;
+        default:
+            break;
+    }
+}
+
+#pragma -tableview datasource
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return [_currentFileContentArray count];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    FileContent *file = [[FileContent alloc] init];
+    FilePostTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:FilePostCellIndentifier forIndexPath:indexPath];
+    file = [_currentFileContentArray objectAtIndex:indexPath.row];
+    cell.fileContentTextField.text = file.filelabel;
+    cell.postFileState.text= _fileContent;
+    //cell.tintColor = [UIColor redColor];
+    cell.accessoryType = UITableViewCellAccessoryDetailButton;
+    return cell;
+    
+}
+
+#pragma mark- tableview delegate
+
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
+{
+    FileDetailViewController *fileDetail = [[FileDetailViewController alloc] init];
+    FileContent *file = [[FileContent alloc] init];
+    file = [_currentFileContentArray objectAtIndex:indexPath.row];
+    fileDetail.file = file;
+    [self.navigationController pushViewController:fileDetail animated:YES];
+    
+}
+
+
+#pragma mark - PostFileHttpRequestResultDelegate
+- (void)DoWithFilePostHttpResulat:(NSData *)resulatData
+{
+    [self.FilePostTableView.pullToRefreshView stopAnimating];
+    NSDictionary *retDic = [[NSDictionary alloc] init];
+    retDic = [OperateWithJson deCodewithJSON:resulatData];
+    NSArray *fileArray = [[NSArray alloc] init];
+    fileArray = [retDic objectForKey:@"postfile"];
+    [OperateDatabase InsertFileContentToDatabase:fileArray];
+    [self FillCellContent:[OperateDatabase getPostFileContent]];
+    [self.FilePostTableView reloadData];
+}
+
+- (void)StopActivityView:(BOOL)isSucess
+{
+    [self.FilePostTableView.pullToRefreshView stopAnimating];
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"" message:@"更新失败" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil, nil];
+    [alert show];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+@end

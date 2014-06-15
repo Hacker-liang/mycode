@@ -1,0 +1,28 @@
+//
+//  LoginHttpRequest.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-4-19.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "OperateWithJson.h"
+
+@protocol LoginHttpRequestResultDelegate
+
+- (void)DoWithLoginHttpResulat: (NSData *)resulatData;
+
+@end
+
+@interface LoginHttpRequest : NSObject <NSURLConnectionDelegate, NSURLConnectionDataDelegate>
+
+@property(nonatomic, strong) NSString *urlStr;
+@property(nonatomic, strong) NSMutableData *receiveData;
+
+
+@property(nonatomic, assign) id <LoginHttpRequestResultDelegate>myDelegate;
+
+- (void)HttpLogintwithPost: (NSData *)username_password;
+
+@end

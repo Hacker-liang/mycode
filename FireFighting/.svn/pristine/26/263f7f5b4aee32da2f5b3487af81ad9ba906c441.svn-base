@@ -1,0 +1,25 @@
+//
+//  AttachFileDownloadTableViewCell.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-5-4.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "AttachFileDownloadTableViewCell.h"
+
+@implementation AttachFileDownloadTableViewCell
+
+- (void)awakeFromNib
+{
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+{
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

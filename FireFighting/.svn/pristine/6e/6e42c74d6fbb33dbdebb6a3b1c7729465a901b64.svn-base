@@ -1,0 +1,61 @@
+//
+//  SocketTaskOperate.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-5-8.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "SocketTaskOperate.h"
+
+@implementation SocketTaskOperate
+NSString *s;
+CFRunLoopRef currentLoop;
+static SocketTaskOperate *socketTaskOperate;
+
++ (SocketTaskOperate *)shareSocketTaskOperate
+{
+    @synchronized (self)
+    {
+        if (socketTaskOperate == nil) {
+            socketTaskOperate = [[self alloc] init];
+        }
+    }
+    return socketTaskOperate;
+}
+
+- (void)startTaskThread
+{
+    NSThread *thread = [[NSThread alloc] initWithTarget:self selector:@selector(playerThread: ) object:nil];
+    //开启线程，如果是利用NSOperation，只需要加入到NSOperationQueue里面去就好了，queue自己会在合适的时机执行线程，而不需要程序员自己去控制。
+    [thread start];
+}
+
+- (void) playerThread:(id)unused
+{
+    currentLoop = CFRunLoopGetCurrent();//子线程的runloop引用
+    [self initPlayer];
+    CFRunLoopRun();
+}
+
+-(void) initPlayer
+{
+    [NSTimer scheduledTimerWithTimeInterval:3.0 target:self
+                                   selector:@selector(checkState:) userInfo:nil repeats:YES];
+}
+
+-(void) checkState:(NSTimer*) timer
+{
+    for(int i = 0 ; i < 5; i++)
+    {
+        NSLog(@"%d", i);
+        sleep(1);
+    }
+    
+    //CFRunLoopStop 会将当前timer结束掉 如果runloop不结束 timer会反复执行
+    //CFRunLoopStop(currentLoop);
+    
+}
+
+
+@end

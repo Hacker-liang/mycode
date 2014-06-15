@@ -1,0 +1,51 @@
+//
+//  ReceivedFileDetailViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-15.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "ReceivedFileDetailViewController.h"
+
+@interface ReceivedFileDetailViewController ()
+
+@end
+
+@implementation ReceivedFileDetailViewController
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    self.tabBarController.tabBar.hidden = YES;
+
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    // Do any additional setup after loading the view from its nib.
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    self.tabBarController.tabBar.hidden = NO;
+    
+}
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+@end

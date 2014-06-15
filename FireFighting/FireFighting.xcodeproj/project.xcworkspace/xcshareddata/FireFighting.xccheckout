@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>3156A781-D8AF-46BF-9B86-65EC58DB6A66</string>
+	<key>IDESourceControlProjectName</key>
+	<string>FireFighting</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>FE89C3D1-C17E-4E60-AB95-8BCC384C9E79</key>
+		<string>svn://localhost/SVN/ios/FireFighting</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>FireFighting.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>FE89C3D1-C17E-4E60-AB95-8BCC384C9E79</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectRepositoryRootDictionary</key>
+	<dict>
+		<key>FE89C3D1-C17E-4E60-AB95-8BCC384C9E79</key>
+		<string>svn://localhost</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>svn://localhost/SVN/ios/FireFighting/FireFighting.xcodeproj</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>FE89C3D1-C17E-4E60-AB95-8BCC384C9E79</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.subversion</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>FE89C3D1-C17E-4E60-AB95-8BCC384C9E79</string>
+			<key>IDESourceControlWCCName</key>
+			<string>FireFighting</string>
+		</dict>
+	</array>
+</dict>
+</plist>

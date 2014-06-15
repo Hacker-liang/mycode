@@ -1,0 +1,20 @@
+//
+//  AttachFileDownloadTableViewController.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-5-4.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "AttachFileDownloadTableViewCell.h"
+#import "DownloadAttachFileHttpRequest.h"
+#import "OperateDatabase.h"
+#import "OperateWithJson.h"
+#import "UserInfomation.h"
+#import "OperateWithFile.h"
+#import <QuickLook/QuickLook.h>
+
+@interface AttachFileDownloadTableViewController : UITableViewController <DownLoadAttachFileHttpRequestDelegate, AttachFileDownloadDelegate, UIAlertViewDelegate ,QLPreviewControllerDataSource, QLPreviewControllerDelegate>
+
+@end

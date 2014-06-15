@@ -1,0 +1,18 @@
+//
+//  NotificationManagementViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-12.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "NotificationManagementViewController.h"
+
+@interface NotificationManagementViewController ()
+
+@end
+
+@implementation NotificationManagementViewController
+
+
+@end

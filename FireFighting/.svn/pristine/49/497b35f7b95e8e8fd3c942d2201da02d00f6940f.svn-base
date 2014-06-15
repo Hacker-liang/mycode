@@ -1,0 +1,15 @@
+//
+//  ControllerTableViewCell.h
+//  FireFighting
+//
+//  Created by liangpengshuai on 14-4-22.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface ControllerTableViewCell : UITableViewCell
+
+@property (weak, nonatomic) IBOutlet UIImageView *controllerImage;
+@property (weak, nonatomic) IBOutlet UILabel *controllerName;
+@end

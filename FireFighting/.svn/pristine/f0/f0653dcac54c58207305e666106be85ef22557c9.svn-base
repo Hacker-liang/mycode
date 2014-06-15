@@ -1,0 +1,26 @@
+//
+//  OperateDatabase.h
+//  FireFighting
+//
+//  Created by liangpengshuai on 14-4-24.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "UserInfomation.h"
+#import <sqlite3.h>
+#import "Base64.h"
+#import "FileContent.h"
+
+@interface OperateDatabase : NSObject
+
++(BOOL)getUserInfo;
++ (void)InsertUserInfoToDatabase;
++ (void)InsertPostFileContentToDatabase: (NSArray *)files;
++ (void)InsertReceiveFileContentToDatabase: (NSArray *)files;
++ (NSDictionary *)getPostFileContent;
++ (FileContent *)getPostFileContent: (long)posttime;
++ (NSDictionary *)getReceiveFileContent;
+
+
+@end

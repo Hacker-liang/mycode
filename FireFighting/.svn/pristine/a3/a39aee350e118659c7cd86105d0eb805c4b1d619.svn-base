@@ -1,0 +1,180 @@
+//
+//  FileReceiveTableViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-13.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "FileReceiveTableViewController.h"
+
+@interface FileReceiveTableViewController ()
+
+@property (strong, nonatomic) FileDetailViewController *FileDetailController;
+
+@property (strong, nonatomic) FileReceiveTableViewCell *FRCell;
+
+@property (strong, nonatomic) NSMutableArray *fileContentArray;
+
+@property (strong, nonatomic) UITableView *FileReceiveTableView;
+@property (strong, nonatomic) ReceiveFileHttpRequest *receiveFileRequest;
+@property (strong, nonatomic) UserInfomation *userInfo;
+@property (strong, nonatomic) FileContent *filecontent;
+
+@end
+
+@implementation FileReceiveTableViewController
+
+
+
+static NSString *fileReceiveCell = @"fileReceiveCellIdentifier";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        _fileContentArray = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    _FileReceiveTableView = (id)[self.view viewWithTag:1];
+    _FileReceiveTableView.rowHeight = 60;
+    UINib *FRTableCellNib = [UINib nibWithNibName:@"FileReceiveTableViewCell" bundle:nil];
+    [_FileReceiveTableView registerNib:FRTableCellNib forCellReuseIdentifier:fileReceiveCell];
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self loadPullToRefresh];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (void)loadPullToRefresh
+{
+    if ([self respondsToSelector:@selector(automaticallyAdjustsScrollViewInsets)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+        
+        UIEdgeInsets insets = self.FileReceiveTableView.contentInset;
+        insets.top = self.navigationController.navigationBar.bounds.size.height +
+        [UIApplication sharedApplication].statusBarFrame.size.height;
+        self.FileReceiveTableView.contentInset = insets;
+        self.FileReceiveTableView.scrollIndicatorInsets = insets;
+    }
+    __block FileReceiveTableViewController *tempSelf = self;
+    [self.FileReceiveTableView addCustomPullToRefreshWithActionHandler:^{
+        [tempSelf loadnewFile];
+    }];
+}
+
+- (void)loadnewFile
+{
+    _receiveFileRequest = [[ReceiveFileHttpRequest alloc] init];
+    _receiveFileRequest.myDelegate = self;
+    [_receiveFileRequest HttpFileReveivewithPost:[self encodeWithFileRefreshRequest]];
+}
+
+- (NSData *)encodeWithFileRefreshRequest
+{
+    _userInfo = [UserInfomation shareUserInfo];
+    NSData *retData = [[NSData alloc] init];
+    NSMutableDictionary *requesDic = [[NSMutableDictionary alloc] init];
+    [requesDic setObject:@"refreshreceivefile" forKey:@"receivefilerequest"];
+    [requesDic setObject:_userInfo.userNo forKey:@"userno"];
+    [requesDic setObject:_userInfo.department forKey:@"department"];
+    retData = [OperateWithJson enCodeWithDictionary:requesDic];
+    return retData;
+}
+
+#pragma mark - Table view data source
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return [_fileContentArray count];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    FileContent *file = [[FileContent alloc] init];
+    file = [_fileContentArray objectAtIndex:indexPath.row];
+    FileReceiveTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:fileReceiveCell forIndexPath:indexPath];
+    NSDate *postdate = [NSDate dateWithTimeIntervalSince1970:file.posttime-8*3600];
+    NSDateFormatter *dateformatter = [[NSDateFormatter alloc] init];
+    [dateformatter setDateFormat:@"dd/MM/yyyy hh:mmaaa"];
+    NSString *dateStr = [dateformatter stringFromDate:postdate];
+    cell.fileContentTextField.text = file.filelabel;
+    cell.filePostTime.text = dateStr;
+    cell.filePostUser.text = file.username;
+    cell.accessoryType = UITableViewCellAccessoryDetailButton;
+    return cell;
+
+}
+
+
+#pragma table view delegate
+
+- (void)tableView:(UITableView *)tableView didDeselectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"%@",@"select");
+    
+}
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
+{
+    
+    _FRCell = (id)[tableView cellForRowAtIndexPath:indexPath];
+    //_FileDetailController.fileDetail = _FRCell.fileContentTextField.text;
+    _FileDetailController = [[FileDetailViewController alloc] init];
+    [self.navigationController pushViewController:_FileDetailController animated:YES];
+    
+    
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"%@",_fileContentArray);
+    [_fileContentArray removeObjectAtIndex:indexPath.row];
+    [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObjects:indexPath, nil] withRowAnimation:UITableViewRowAnimationAutomatic];
+}
+
+#pragma mark- ReceiveFileHttpRequestResultDelegate
+
+- (void)DoWithFileReceiveHttpResulat:(NSData *)resulatData
+{
+    [self.FileReceiveTableView.pullToRefreshView stopAnimating];
+    NSDictionary *retDic = [[NSDictionary alloc] init];
+    retDic = [OperateWithJson deCodewithJSON:resulatData];
+    NSArray *fileArray = [[NSArray alloc] init];
+    fileArray = [retDic objectForKey:@"receivefile"];
+    [OperateDatabase InsertReceiveFileContentToDatabase:fileArray];
+    _fileContentArray = [(NSDictionary *)[OperateDatabase getReceiveFileContent] objectForKey:@"receivefiles"];
+    [self.FileReceiveTableView reloadData];
+}
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

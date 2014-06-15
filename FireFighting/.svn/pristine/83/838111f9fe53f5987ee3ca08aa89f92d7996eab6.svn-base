@@ -1,0 +1,341 @@
+//
+//  OperateDatabase.m
+//  FireFighting
+//
+//  Created by liangpengshuai on 14-4-24.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "OperateDatabase.h"
+
+@implementation OperateDatabase
+
+static sqlite3 *database;
+static NSString *mainDatabaseName = @"user.sqlite";
+static sqlite3_stmt *statement;
++ (NSString *)getUserDatabasePath: (NSString *)userNo
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *userDatabaseName = [userNo stringByAppendingFormat:@".sqlite"];
+    NSString *userDocumentPath =  [documentsDirectory stringByAppendingPathComponent:userDatabaseName];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if(![fileManager fileExistsAtPath:userDocumentPath])
+        [fileManager createDirectoryAtPath:userDocumentPath withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    return userDocumentPath;
+}
+
++ (NSString *)getMainDatabasePath
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *retDiectory = [documentsDirectory stringByAppendingPathComponent:mainDatabaseName];
+    return retDiectory;
+}
+
++ (NSString *)getUserDatabasePath
+{
+    UserInfomation *userInfo = [UserInfomation shareUserInfo];
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *userPath = [NSString stringWithFormat:@"%@.sqlite", userInfo.userNo];
+    NSString *retDiectory = [documentsDirectory stringByAppendingPathComponent:userPath];
+    return retDiectory;
+}
+
++ (BOOL)OpenDatabase: (NSString *)databasePath
+{
+    if (sqlite3_open([databasePath UTF8String], &database) != SQLITE_OK) {
+        sqlite3_close(database);
+        NSAssert(0, @"Fail to open database");
+        return NO;
+    }
+    return YES;
+}
+
++ (void)execSql:(NSString *)sql
+{
+    char *err;
+    if (sqlite3_exec(database, [sql UTF8String], NULL, NULL, &err) != SQLITE_OK) {
+        sqlite3_close(database);
+        NSLog(@"数据库操作数据失败!");
+    }
+}
+
++ (BOOL)getUserInfo
+{
+    UserInfomation *userInfo = [UserInfomation shareUserInfo];
+   
+    NSString *createUserInfoTable = [NSString stringWithFormat:@"create table if not exists userinfo(userno text primary key, username text, userphoto text, accounttype integer, department text, emailaddress text, phone text)"];
+    NSString *mainDatabasePath = [OperateDatabase getMainDatabasePath];
+    NSString *selectInfo = [NSString stringWithFormat:@"select * from userinfo where userno = '%@'",userInfo.userNo];
+   //为了测试使用固定用户名
+    //NSString *selectInfo = [NSString stringWithFormat:@"select * from userinfo where userno = 'heheceo'"];
+    BOOL openResult = [OperateDatabase OpenDatabase:mainDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createUserInfoTable];
+        if (sqlite3_prepare_v2(database, [selectInfo UTF8String], -1, &statement, nil) == SQLITE_OK) {
+            while (sqlite3_step(statement) == SQLITE_ROW) {
+                char *userno = (char *)sqlite3_column_text(statement, 0);
+                userInfo.userNo = [[NSString alloc] initWithUTF8String:userno];
+                char *username = (char *)sqlite3_column_text(statement, 1);
+                if (username != NULL)
+                    userInfo.userName = [[NSString alloc] initWithUTF8String:username];
+                else
+                    userInfo.userName = @"";
+                char *userphoto = (char *)sqlite3_column_text(statement, 2);
+                userInfo.userPhoto = [Base64 base64Decode:[[NSString alloc] initWithUTF8String:userphoto]];
+                userInfo.accountType = sqlite3_column_int(statement, 3);
+                char *department = (char *)sqlite3_column_text(statement, 4);
+                if (department != NULL)
+                    userInfo.department = [[NSString alloc] initWithUTF8String:department];
+                else
+                    userInfo.department = @"";
+                char *useremail = (char *)sqlite3_column_text(statement, 5);
+                if (useremail != NULL)
+                     userInfo.emailAddress = [[NSString alloc] initWithUTF8String:useremail];
+                else userInfo.emailAddress = @"";
+                char *phone = (char *)sqlite3_column_text(statement, 6);
+                if (phone != NULL)
+                    userInfo.phoneNo = [[NSString alloc] initWithUTF8String:phone];
+                else
+                    userInfo.phoneNo = @"";
+            }
+            sqlite3_close(database);
+            if (userInfo.userNo==NULL) {
+                return NO;
+            }
+            return YES;
+        }
+        return NO;
+    }
+    return NO;
+}
+
++ (NSDictionary *)getPostFileContent
+{
+    NSMutableArray *fileover = [[NSMutableArray alloc] init];
+    NSMutableArray *fileprogressing = [[NSMutableArray alloc] init];
+    NSMutableArray *filenotpass = [[NSMutableArray alloc] init];
+    NSMutableDictionary *retDic = [[NSMutableDictionary alloc] init];
+    NSString *createFileContentTable = [NSString stringWithFormat:@"create table if not exists postfilecontent(department text, filestatus integer, posttime double primary key, filelabel text, filedetail text)"];
+    NSString *userDatabasePath = [OperateDatabase getUserDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:userDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createFileContentTable];
+        NSString *selectPostFile = [NSString stringWithFormat:@"select filestatus, posttime, filelabel from postfilecontent order by posttime desc"];
+        if (sqlite3_prepare_v2(database, [selectPostFile UTF8String], -1, &statement, nil) == SQLITE_OK) {
+            while (sqlite3_step(statement) == SQLITE_ROW) {
+                FileContent *postfile = [[FileContent alloc] init];
+                int filestatus = sqlite3_column_int(statement, 0);
+                long posttime = sqlite3_column_double(statement, 1);
+                char *filelabel = (char *)sqlite3_column_text(statement, 2);
+                NSString *filelabelStr = [[NSString alloc] initWithUTF8String:filelabel];
+                postfile.filelabel = filelabelStr;
+                postfile.filestatus = filestatus;
+                postfile.posttime = posttime;
+                if (filestatus == 0)
+                    [filenotpass addObject:postfile];
+                if (filestatus == 1)
+                    [fileprogressing addObject:postfile];
+                if (filestatus == 2)
+                    [fileover addObject:postfile];
+            }
+            [retDic setObject:filenotpass forKey:@"filenotpass"];
+            [retDic setObject:fileprogressing forKey:@"fileprogress"];
+            [retDic setObject:fileover forKey:@"fileover"];
+        }
+        sqlite3_close(database);
+    }
+    return retDic;
+}
+
+//发文管理的文件详情的时候查询数据库用到，根据发送时间获取文件详细内容
++ (FileContent *)getPostFileContent: (long)posttime
+{
+    FileContent *postfile = [[FileContent alloc] init];
+    NSString *createFileContentTable = [NSString stringWithFormat:@"create table if not exists postfilecontent(department text, filestatus integer, posttime double primary key, filelabel text, filedetail text)"];
+    NSString *userDatabasePath = [OperateDatabase getUserDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:userDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createFileContentTable];
+        NSString *selectPostFile = [NSString stringWithFormat:@"select * from postfilecontent where posttime = '%ld'",posttime];
+        if (sqlite3_prepare_v2(database, [selectPostFile UTF8String], -1, &statement, nil) == SQLITE_OK) {
+            while (sqlite3_step(statement) == SQLITE_ROW) {
+                char *department = (char *)sqlite3_column_text(statement, 0);
+                postfile.department = [[NSString alloc] initWithUTF8String:department];
+                postfile.filestatus = sqlite3_column_int(statement, 1);
+                postfile.posttime = sqlite3_column_double(statement, 2);
+                char *filelabel = (char *)sqlite3_column_text(statement, 3);
+                postfile.filelabel = [[NSString alloc] initWithUTF8String:filelabel];
+                char *filedetail = (char *)sqlite3_column_text(statement, 4);
+                postfile.filedetail = [[NSString alloc] initWithUTF8String:filedetail];
+            }
+        }
+        sqlite3_close(database);
+    }
+    return postfile;
+}
+
++ (NSDictionary *)getReceiveFileContent
+{
+    NSMutableArray *receivefileArray = [[NSMutableArray alloc] init];
+
+    NSMutableDictionary *retDic = [[NSMutableDictionary alloc] init];
+    NSString *createFileContentTable = [NSString stringWithFormat:@"create table if not exists receivefilecontent(username text, posttime double primary key, filelabel text, filedetail text)"];
+    NSString *userDatabasePath = [OperateDatabase getUserDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:userDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createFileContentTable];
+        NSString *selectPostFile = [NSString stringWithFormat:@"select username, posttime, filelabel from receivefilecontent order by posttime desc"];
+        if (sqlite3_prepare_v2(database, [selectPostFile UTF8String], -1, &statement, nil) == SQLITE_OK) {
+            while (sqlite3_step(statement) == SQLITE_ROW) {
+                FileContent *receivefile = [[FileContent alloc] init];
+                char *username = (char *)sqlite3_column_text(statement, 0);
+                NSString *usernameStr = [[NSString alloc] initWithUTF8String:username];
+                long posttime = sqlite3_column_double(statement, 1);
+                char *filelabel = (char *)sqlite3_column_text(statement, 2);
+                NSString *filelabelStr = [[NSString alloc] initWithUTF8String:filelabel];
+                receivefile.username = usernameStr;
+                receivefile.filelabel = filelabelStr;
+                receivefile.posttime = posttime;
+                [receivefileArray addObject:receivefile];
+            }
+            [retDic setObject:receivefileArray forKey:@"receivefiles"];
+        }
+        sqlite3_close(database);
+    }
+    return retDic;
+}
+
+//发文管理的文件详情的时候查询数据库用到，根据发送时间获取文件详细内容
++ (FileContent *)getReceiveFileContent: (long)posttime
+{
+    FileContent *receivefile = [[FileContent alloc] init];
+    NSString *createFileContentTable = [NSString stringWithFormat:@"create table if not exists receivefilecontent(username text, posttime double primary key, filelabel text, filedetail text)"];
+    NSString *userDatabasePath = [OperateDatabase getUserDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:userDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createFileContentTable];
+        NSString *selectPostFile = [NSString stringWithFormat:@"select * from receivefilecontent where posttime = '%ld'",posttime];
+        if (sqlite3_prepare_v2(database, [selectPostFile UTF8String], -1, &statement, nil) == SQLITE_OK) {
+            while (sqlite3_step(statement) == SQLITE_ROW) {
+                char *username = (char *)sqlite3_column_text(statement, 0);
+                receivefile.username = [[NSString alloc] initWithUTF8String:username];
+                receivefile.posttime = sqlite3_column_double(statement, 1);
+                char *filelabel = (char *)sqlite3_column_text(statement, 2);
+                receivefile.filelabel = [[NSString alloc] initWithUTF8String:filelabel];
+                char *filedetail = (char *)sqlite3_column_text(statement, 3);
+                receivefile.filedetail = [[NSString alloc] initWithUTF8String:filedetail];
+            }
+        }
+        sqlite3_close(database);
+    }
+    return receivefile;
+}
+
+//
++ (void)InsertUserInfoToDatabase
+{
+    UserInfomation *userInfo = [UserInfomation shareUserInfo];
+    sqlite3_stmt *stmt;
+    NSString *createUserInfoTable = [NSString stringWithFormat:@"create table if not exists userinfo(userno text primary key, username text, userphoto text, accounttype integer, department text, emailaddress text, phone text)"];
+    NSString *mainDatabasePath = [OperateDatabase getMainDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:mainDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createUserInfoTable];
+        NSString *insertInfo = [NSString stringWithFormat:@"insert or replace into userinfo(userno,username,userphoto,accounttype,department,emailaddress,phone)" "values (?,?,?,?,?,?,?);"];
+        if (sqlite3_prepare_v2(database, [insertInfo UTF8String], -1, &stmt, nil) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, [userInfo.userNo UTF8String], -1, NULL);
+            sqlite3_bind_text(stmt, 2, [userInfo.userName UTF8String], -1, NULL);
+            NSString *photoStr = [Base64 base64Encode:userInfo.userPhoto];
+            sqlite3_bind_text(stmt, 3,[photoStr UTF8String] , -1, NULL);
+            sqlite3_bind_int(stmt, 4, userInfo.accountType);
+            sqlite3_bind_text(stmt, 5, [userInfo.department UTF8String], -1, NULL);
+            sqlite3_bind_text(stmt, 6, [userInfo.emailAddress UTF8String], -1, NULL);
+            sqlite3_bind_text(stmt, 7, [userInfo.phoneNo UTF8String], -1, NULL);
+        }
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            
+        }
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(database);
+
+}
+
++ (void)InsertPostFileContentToDatabase: (NSArray *)files
+{
+    sqlite3_stmt *stmt;
+    NSString *createFileContentTable = [NSString stringWithFormat:@"create table if not exists postfilecontent(department text, filestatus integer, posttime double primary key, filelabel text, filedetail text)"];
+    NSString *userDatabasePath = [OperateDatabase getUserDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:userDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createFileContentTable];
+        for (int i=0; i<[files count]; i++) {
+            NSDictionary *file = [[NSDictionary alloc] init];
+            file = [files objectAtIndex:i];
+            NSString *insertFileContent = [NSString stringWithFormat:@"insert or replace into postfilecontent(department,filestatus,posttime,filelabel,filedetail)" "values (?,?,?,?,?);"];
+            if (sqlite3_prepare_v2(database, [insertFileContent UTF8String], -1, &stmt, nil) == SQLITE_OK) {
+                sqlite3_bind_text(stmt, 1, [[file objectForKey:@"department"] UTF8String], -1, NULL);
+                sqlite3_bind_int(stmt, 2, [[file objectForKey:@"filestatus"] intValue]);
+                sqlite3_bind_double(stmt, 3, [[file objectForKey:@"posttime"] intValue]);
+                sqlite3_bind_text(stmt, 4, [[file objectForKey:@"filelabel"] UTF8String], -1, NULL);
+                sqlite3_bind_text(stmt, 5, [[file objectForKey:@"filedetail"] UTF8String], -1, NULL);
+
+            }
+            if (sqlite3_step(stmt) != SQLITE_DONE) {
+                
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(database);
+}
+
++ (void)InsertReceiveFileContentToDatabase: (NSArray *)files
+{
+    sqlite3_stmt *stmt;
+    NSString *createFileContentTable = [NSString stringWithFormat:@"create table if not exists receivefilecontent(username text, posttime double primary key, filelabel text, filedetail text)"];
+    NSString *userDatabasePath = [OperateDatabase getUserDatabasePath];
+    BOOL openResult = [OperateDatabase OpenDatabase:userDatabasePath];
+    if (openResult) {
+        [OperateDatabase execSql:createFileContentTable];
+        for (int i=0; i<[files count]; i++) {
+            NSDictionary *file = [[NSDictionary alloc] init];
+            file = [files objectAtIndex:i];
+            NSString *insertFileContent = [NSString stringWithFormat:@"insert or replace into receivefilecontent(username,posttime,filelabel,filedetail)" "values (?,?,?,?);"];
+            if (sqlite3_prepare_v2(database, [insertFileContent UTF8String], -1, &stmt, nil) == SQLITE_OK) {
+                sqlite3_bind_text(stmt, 1, [[file objectForKey:@"username"] UTF8String], -1, NULL);
+                sqlite3_bind_double(stmt, 2, [[file objectForKey:@"posttime"] intValue]);
+                sqlite3_bind_text(stmt, 3, [[file objectForKey:@"filelabel"] UTF8String], -1, NULL);
+                sqlite3_bind_text(stmt, 4, [[file objectForKey:@"filedetail"] UTF8String], -1, NULL);
+                
+            }
+            if (sqlite3_step(stmt) != SQLITE_DONE) {
+                
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(database);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@end

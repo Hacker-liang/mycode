@@ -1,0 +1,84 @@
+//
+//  PersionalOfficeViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-17.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "PersionalOfficeViewController.h"
+
+@interface PersionalOfficeViewController ()
+
+
+@end
+
+@implementation PersionalOfficeViewController
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        self.userListController = [[UserListTableViewController alloc]initWithNibName:@"UserListTableViewController" bundle:nil];
+
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    self.userListController.view.frame = CGRectMake(0, 60, 320, 380);
+    [self.view addSubview:self.userListController.view];
+    // Do any additional setup after loading the view from its nib.
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    self.tabBarController.tabBar.hidden = YES;
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    self.tabBarController.tabBar.hidden = NO;
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (IBAction)ListSegment:(UISegmentedControl *)sender {
+    switch (sender.selectedSegmentIndex) {
+        case 0:
+            if (!self.userListController) {
+                self.userListController = [[UserListTableViewController alloc]initWithNibName:@"UserListTableViewController" bundle:nil];
+            }
+            [self.view addSubview:self.userListController.view];
+            break;
+        case 1:
+            if (!self.activityListController) {
+                self.activityListController = [[PersionalActivityListViewController alloc]initWithNibName:@"PersionalActivityListTableViewController" bundle:nil];
+            }
+            self.activityListController.view.frame = CGRectMake(0, 60, 320, 380);
+            [self.view addSubview:self.activityListController.view];
+            break;
+        default:
+            break;
+    }
+}
+
+- (IBAction)ReturnToSupreView:(UIButton *)sender {
+    [[NSNotificationCenter defaultCenter]postNotificationName:@"showtabbar" object:nil];
+    [self.view removeFromSuperview];
+}
+
+
+
+
+
+@end

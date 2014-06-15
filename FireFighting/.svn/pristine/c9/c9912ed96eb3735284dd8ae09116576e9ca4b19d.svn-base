@@ -1,0 +1,16 @@
+//
+//  SocketTaskOperate.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-5-8.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface SocketTaskOperate : NSObject
+
++ (SocketTaskOperate *)shareSocketTaskOperate;
+- (void)startTaskThread;
+
+@end

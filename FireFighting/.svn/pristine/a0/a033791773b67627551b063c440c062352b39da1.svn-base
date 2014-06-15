@@ -1,0 +1,17 @@
+//
+//  FileReceiveTableViewCell.h
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-13.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface FileReceiveTableViewCell : UITableViewCell
+@property (strong, nonatomic) IBOutlet UITextField *fileContentTextField;
+@property (strong, nonatomic) IBOutlet UILabel *filePostUser;
+@property (strong, nonatomic) IBOutlet UILabel *filePostTime;
+
+
+@end

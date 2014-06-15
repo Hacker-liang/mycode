@@ -1,0 +1,321 @@
+//
+//  FileReceiveTableViewController.m
+//  FireFighting
+//
+//  Created by liang pengshuai on 14-3-13.
+//  Copyright (c) 2014年 liang pengshuai. All rights reserved.
+//
+
+#import "FileReceiveTableViewController.h"
+
+@interface FileReceiveTableViewController ()
+
+@property (strong, nonatomic) FileDetailViewController *FileDetailController;
+
+@property (strong, nonatomic) FileReceiveTableViewCell *FRCell;
+
+@property (strong, nonatomic) NSMutableArray *fileContentArray;
+
+@property (strong, nonatomic) UITableView *FileReceiveTableView;
+@property (strong, nonatomic) ReceiveFileHttpRequest *receiveFileRequest;
+@property (strong, nonatomic) UserInfomation *userInfo;
+@property (strong, nonatomic) FileContent *filecontent;
+@property (strong, nonatomic) NSMutableArray *unPassFileArray;
+
+//动态改变cell高度
+@property (assign) BOOL cellShouldChange;
+@property (assign) NSInteger changeRow;
+@property (strong, nonatomic) NSString *checkStr;
+
+@end
+
+@implementation FileReceiveTableViewController
+
+
+
+static NSString *fileReceiveCell = @"fileReceiveCellIdentifier";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        _fileContentArray = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    self.tabBarController.tabBar.hidden = YES;
+    _cellShouldChange = NO;
+    _FileReceiveTableView = (id)[self.view viewWithTag:1];
+    _FileReceiveTableView.rowHeight = 60;
+    UINib *FRTableCellNib = [UINib nibWithNibName:@"FileReceiveTableViewCell" bundle:nil];
+    [_FileReceiveTableView registerNib:FRTableCellNib forCellReuseIdentifier:fileReceiveCell];
+    if (_isReceiveFileView) {
+        _fileContentArray = [(NSDictionary *)[OperateDatabase getReceiveFileContent] objectForKey:@"receivefiles"];
+        [self.FileReceiveTableView reloadData];
+    } else {
+        _unPassFileArray = [[NSMutableArray alloc] init];
+    }
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    self.tabBarController.tabBar.hidden = YES;
+
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    self.tabBarController.tabBar.hidden = NO;
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self loadPullToRefresh];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (void)loadPullToRefresh
+{
+    if ([self respondsToSelector:@selector(automaticallyAdjustsScrollViewInsets)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+        
+        UIEdgeInsets insets = self.FileReceiveTableView.contentInset;
+        insets.top = self.navigationController.navigationBar.bounds.size.height +
+        [UIApplication sharedApplication].statusBarFrame.size.height;
+        self.FileReceiveTableView.contentInset = insets;
+        self.FileReceiveTableView.scrollIndicatorInsets = insets;
+    }
+    __block FileReceiveTableViewController *tempSelf = self;
+    [self.FileReceiveTableView addCustomPullToRefreshWithActionHandler:^{
+        [tempSelf loadnewFile];
+    }];
+}
+
+- (void)loadnewFile
+{
+    if (!_receiveFileRequest) {
+        _receiveFileRequest = [[ReceiveFileHttpRequest alloc] init];
+        _receiveFileRequest.myDelegate = self;
+    }
+    [_receiveFileRequest HttpFileReveivewithPost:[self encodeWithFileRefreshRequest]];
+}
+
+- (NSData *)encodeWithFileRefreshRequest
+{
+    if (!_userInfo) {
+         _userInfo = [UserInfomation shareUserInfo];
+    }
+    NSData *retData = [[NSData alloc] init];
+    NSMutableDictionary *requesDic = [[NSMutableDictionary alloc] init];
+    if (_isReceiveFileView) {
+        [requesDic setObject:@"refreshreceivefile" forKey:@"receivefilerequest"];
+        [requesDic setObject:_userInfo.userNo forKey:@"userno"];
+        [requesDic setObject:_userInfo.department forKey:@"department"];
+
+    } else {
+        [requesDic setObject:@"getunpassfile" forKey:@"receivefilerequest"];
+        [requesDic setObject:_userInfo.department forKey:@"department"];
+    }
+    retData = [OperateWithJson enCodeWithDictionary:requesDic];
+    return retData;
+}
+
+- (NSData *)encodeWithCheckRequest
+{
+    
+    if (!_userInfo) {
+        _userInfo = [UserInfomation shareUserInfo];
+    }
+    NSData *retData = [[NSData alloc] init];
+    NSMutableDictionary *requesDic = [[NSMutableDictionary alloc] init];
+    [requesDic setObject:@"checkresult" forKey:@"receivefilerequest"];
+    [requesDic setObject:[[_unPassFileArray objectAtIndex:_changeRow] objectForKey:@"posttime"] forKey:@"posttime"];
+    [requesDic setObject:[[_unPassFileArray objectAtIndex:_changeRow] objectForKey:@"userno"] forKey:@"userno"];
+    [requesDic setObject:_checkStr forKey:@"checkstr"];
+    retData = [OperateWithJson enCodeWithDictionary:requesDic];
+    return retData;
+}
+
+#pragma mark - Table view data source
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    if (_isReceiveFileView)
+        return [_fileContentArray count];
+    else return [_unPassFileArray count];
+    
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    FileReceiveTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:fileReceiveCell forIndexPath:indexPath];
+    if (_isReceiveFileView) {
+        FileContent *file = [[FileContent alloc] init];
+        file = [_fileContentArray objectAtIndex:indexPath.row];
+        NSDate *postdate = [NSDate dateWithTimeIntervalSince1970:file.posttime-8*3600];
+        NSDateFormatter *dateformatter = [[NSDateFormatter alloc] init];
+        [dateformatter setDateFormat:@"dd/MM/yyyy hh:mmaaa"];
+        NSString *dateStr = [dateformatter stringFromDate:postdate];
+        cell.fileContentTextField.text = file.filelabel;
+        cell.filePostTime.text = dateStr;
+        cell.filePostUser.text = file.username;
+        cell.pass.hidden = YES;
+        cell.nopass.hidden = YES;
+    } else {
+        NSDate *postdate = [NSDate dateWithTimeIntervalSince1970:[[[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"posttime"] longValue]-8*3600];
+        NSDateFormatter *dateformatter = [[NSDateFormatter alloc] init];
+        [dateformatter setDateFormat:@"dd/MM/yyyy hh:mmaaa"];
+        NSString *dateStr = [dateformatter stringFromDate:postdate];
+        cell.fileContentTextField.text = [[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"filelabel"];
+        cell.filePostTime.text = dateStr;
+        cell.filePostUser.text = [[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"username"];
+        if (!_cellShouldChange) {
+            cell.pass.hidden = YES;
+            cell.nopass.hidden = YES;
+
+        }
+        
+        cell.myDelegate = self;
+    }
+    cell.accessoryType = UITableViewCellAccessoryDetailButton;
+    return cell;
+
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (!_isReceiveFileView && _cellShouldChange && indexPath.row == _changeRow) {
+        //_cellShouleChange = NO;
+        return 110.0;
+    }
+    return 60;
+}
+
+#pragma table view delegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (!_isReceiveFileView) {
+        _cellShouldChange = YES;
+        _changeRow = indexPath.row;
+        FileReceiveTableViewCell *cell = (FileReceiveTableViewCell *)[tableView cellForRowAtIndexPath:indexPath];
+        cell.pass.hidden = NO;
+        cell.nopass.hidden = NO;
+        [self.tableView reloadData];
+    }
+}
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
+{
+    
+    _FRCell = (id)[tableView cellForRowAtIndexPath:indexPath];
+    _FileDetailController = [[FileDetailViewController alloc] init];
+    if (_isReceiveFileView)
+        _FileDetailController.file = [_fileContentArray objectAtIndex:[indexPath row]];
+    else {
+        FileContent *file = [[FileContent alloc] init];
+        _FileDetailController.isUnpassFileDetail = YES;
+        file.todepartment = [[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"todepartment"];
+        file.posttime = [[[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"posttime"] longValue];
+        file.filelabel = [[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"filelabel"];
+        file.filedetail = [[_unPassFileArray objectAtIndex:indexPath.row] objectForKey:@"filedetail"];
+        _FileDetailController.file = file;
+    }
+    
+    _FileDetailController.isPostFileDetail = NO;
+    [self.navigationController pushViewController:_FileDetailController animated:YES];
+    
+    
+}
+
+#pragma mark- ReceiveFileHttpRequestResultDelegate
+
+- (void)DoWithFileReceiveHttpResulat:(NSData *)resulatData
+{
+    [self.FileReceiveTableView.pullToRefreshView stopAnimating];
+    NSDictionary *retDic = [[NSDictionary alloc] init];
+    retDic = [OperateWithJson deCodewithJSON:resulatData];
+    NSArray *fileArray = [[NSArray alloc] init];
+    if ([[retDic objectForKey:@"filetype"] isEqualToString:@"receivefile"]) {
+        [OperateDatabase deleteAllOldElement:@"receivefilecontent"];
+        fileArray = [retDic objectForKey:@"receivefile"];
+        if (fileArray.count != 0) {
+            [OperateDatabase InsertReceiveFileContentToDatabase:fileArray];
+
+        }
+        _fileContentArray = [(NSDictionary *)[OperateDatabase getReceiveFileContent] objectForKey:@"receivefiles"];
+        [self.FileReceiveTableView reloadData];
+    } else if ([[retDic objectForKey:@"filetype"] isEqualToString:@"unpassfile"])  {
+        _unPassFileArray = [[retDic objectForKey:@"unpassfile"] mutableCopy];
+        [self.tableView.pullToRefreshView stopAnimating];
+        [self.tableView reloadData];
+    } else if ([[retDic objectForKey:@"filetype"] isEqualToString:@"updateresult"])  {
+        UIAlertView *alert;
+        if ([[retDic objectForKey:@"result"] boolValue]) {
+            alert = [[UIAlertView alloc] initWithTitle:@"" message:@"操作成功" delegate:nil cancelButtonTitle:@"取消" otherButtonTitles:nil, nil];
+        } else {
+            alert = [[UIAlertView alloc] initWithTitle:@"" message:@"操作失败" delegate:nil cancelButtonTitle:@"取消" otherButtonTitles:nil, nil];
+        }
+        [alert show];
+    }
+}
+
+#pragma mark -checkFileDelegate
+
+- (void)checkFile:(NSString *)checkStr
+{
+    UIAlertView *alert;
+    if ([checkStr isEqualToString:@"pass"])
+        alert = [[UIAlertView alloc] initWithTitle:@"" message:@"确认此文章通过审核？" delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"是的", nil];
+    else  alert = [[UIAlertView alloc] initWithTitle:@"" message:@"确认此文章不通过审核？" delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"是的", nil];
+    _checkStr = checkStr;
+       [alert show];
+}
+
+#pragma mark -UIAlertViewDelegate
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if (buttonIndex == 1) {
+        if (!_receiveFileRequest) {
+            _receiveFileRequest = [[ReceiveFileHttpRequest alloc] init];
+            _receiveFileRequest.myDelegate = self;
+        }
+        [_receiveFileRequest HttpFileReveivewithPost:[self encodeWithCheckRequest]];
+        [_unPassFileArray removeObjectAtIndex:_changeRow];
+        _cellShouldChange = NO;
+        [self.tableView reloadData];
+    } else {
+        _cellShouldChange = NO;
+        [self.tableView reloadData];
+    }
+}
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
